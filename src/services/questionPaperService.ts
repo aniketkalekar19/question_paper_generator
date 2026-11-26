@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Database, Json } from "@/types/database.types";
 import {
   QuestionPaperSummary,
@@ -21,11 +22,14 @@ export class QuestionPaperService {
    * Retrieves list of generated papers ordered by creation date.
    */
   static async getAllQuestionPapers(): Promise<QuestionPaperSummary[]> {
-    const supabase = createServerClient();
+    const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createAdminClient()
+      : createServerClient();
 
     const { data, error } = await supabase
       .from("generated_papers")
       .select("id, user_id, title, subject, difficulty, total_marks, duration_minutes, status, created_at")
+      .is("user_id", null)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -51,12 +55,15 @@ export class QuestionPaperService {
    * Retrieves a single generated paper by ID including questions.
    */
   static async getQuestionPaperById(id: string) {
-    const supabase = createServerClient();
+    const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createAdminClient()
+      : createServerClient();
 
     const { data: paper, error: paperError } = await supabase
       .from("generated_papers")
       .select("*")
       .eq("id", id)
+      .is("user_id", null)
       .single();
 
     if (paperError || !paper) {

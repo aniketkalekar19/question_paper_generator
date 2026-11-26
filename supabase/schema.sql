@@ -76,6 +76,36 @@ ALTER TABLE public.generated_papers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.test_attempts ENABLE ROW LEVEL SECURITY;
 
+-- Remove legacy permissive policies and make this schema safe to re-apply.
+-- PostgreSQL combines permissive policies with OR, so any old public policy
+-- would otherwise bypass the ownership rules below.
+DROP POLICY IF EXISTS "Allow public read generated_papers" ON public.generated_papers;
+DROP POLICY IF EXISTS "Allow public insert generated_papers" ON public.generated_papers;
+DROP POLICY IF EXISTS "Allow public read questions" ON public.questions;
+DROP POLICY IF EXISTS "Allow public insert questions" ON public.questions;
+DROP POLICY IF EXISTS "Allow public read test_attempts" ON public.test_attempts;
+DROP POLICY IF EXISTS "Allow public insert test_attempts" ON public.test_attempts;
+
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "source_documents_select_own" ON public.source_documents;
+DROP POLICY IF EXISTS "source_documents_insert_own" ON public.source_documents;
+DROP POLICY IF EXISTS "source_documents_update_own" ON public.source_documents;
+DROP POLICY IF EXISTS "source_documents_delete_own" ON public.source_documents;
+DROP POLICY IF EXISTS "generated_papers_select_own" ON public.generated_papers;
+DROP POLICY IF EXISTS "generated_papers_insert_own" ON public.generated_papers;
+DROP POLICY IF EXISTS "generated_papers_update_own" ON public.generated_papers;
+DROP POLICY IF EXISTS "generated_papers_delete_own" ON public.generated_papers;
+DROP POLICY IF EXISTS "questions_select_via_paper" ON public.questions;
+DROP POLICY IF EXISTS "questions_insert_via_paper" ON public.questions;
+DROP POLICY IF EXISTS "questions_update_via_paper" ON public.questions;
+DROP POLICY IF EXISTS "questions_delete_via_paper" ON public.questions;
+DROP POLICY IF EXISTS "test_attempts_select_own_or_paper_owner" ON public.test_attempts;
+DROP POLICY IF EXISTS "test_attempts_insert_own" ON public.test_attempts;
+DROP POLICY IF EXISTS "test_attempts_update_own" ON public.test_attempts;
+DROP POLICY IF EXISTS "test_attempts_delete_own" ON public.test_attempts;
+
 -- ==============================================================================
 -- 1. Profiles Policies
 -- Users can only view, insert, and update their own profile record.

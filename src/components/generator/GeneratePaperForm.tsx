@@ -10,6 +10,7 @@ import { DifficultySelector } from "./DifficultySelector";
 import { ExamParametersInput } from "./ExamParametersInput";
 import { DifficultyLevel } from "@/types/questionPaper.types";
 import { SparklesIcon, AlertCircleIcon, CheckCircleIcon } from "@/components/ui/Icons";
+import { GeneratedPaper } from "@/lib/api/paper";
 
 export function GeneratePaperForm() {
   // Form State
@@ -37,6 +38,9 @@ export function GeneratePaperForm() {
   // UI Feedback State (Authentic UI only)
   const [errors, setErrors] = useState<string[]>([]);
   const [validatedSuccess, setValidatedSuccess] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedPaper, setGeneratedPaper] = useState<GeneratedPaper | null>(null);
+  const [generationError, setGenerationError] = useState("");
 
   const toggleQuestionType = (type: QuestionTypeOption) => {
     if (selectedTypes.includes(type)) {
@@ -47,7 +51,7 @@ export function GeneratePaperForm() {
     }
   };
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors: string[] = [];
 
@@ -87,6 +91,30 @@ export function GeneratePaperForm() {
 
     setErrors([]);
     setValidatedSuccess(true);
+    setGenerationError("");
+    setIsGenerating(true);
+    try {
+      let pdfBase64: string | undefined;
+      if (sourceType === "upload" && file) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Unable to read PDF."));
+          reader.onerror = () => reject(new Error("Unable to read PDF."));
+          reader.readAsDataURL(file);
+        });
+        pdfBase64 = dataUrl.split(",")[1];
+      }
+      const response = await fetch("/api/generate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, title: paperTitle, courseCode, sourceText: sourceType === "paste" ? pastedText : undefined, pdfBase64, difficulty, questionTypes: selectedTypes, questionCount, totalMarks, durationMinutes }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message || "Paper generation failed.");
+      setGeneratedPaper(result.data as GeneratedPaper);
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "Unable to generate the paper. Please try again.");
+      setValidatedSuccess(false);
+    } finally { setIsGenerating(false); }
   };
 
   return (
@@ -115,7 +143,7 @@ export function GeneratePaperForm() {
               Exam Configuration Validated Successfully
             </p>
             <p className="mt-0.5 text-blue-800">
-              Parameters are ready for the Gemini AI generation pipeline. (AI integration scheduled for the next phase).
+              Your request is ready. Gemini will generate the questions from your study material.
             </p>
           </div>
         </div>
@@ -260,12 +288,22 @@ export function GeneratePaperForm() {
 
         <button
           type="submit"
+          disabled={isGenerating}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           <SparklesIcon className="h-4 w-4 text-blue-400" />
-          <span>Generate Question Paper</span>
+          <span>{isGenerating ? "Generating with Gemini…" : "Generate Question Paper"}</span>
         </button>
       </div>
+      {generationError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{generationError}</div>}
+      {generatedPaper && <section id="generated-paper" className="space-y-4 rounded-xl border border-emerald-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+          <div><span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Generated question paper</span><h2 className="mt-1 text-xl font-bold text-slate-900">{generatedPaper.title}</h2><p className="mt-1 text-sm text-slate-500">{generatedPaper.subject} · {generatedPaper.questions.length} questions · {generatedPaper.totalMarks} marks · {generatedPaper.durationMinutes} minutes</p></div>
+          <button type="button" onClick={() => window.print()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Print paper</button>
+        </div>
+        {!generatedPaper.persisted && <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">Paper generated successfully. Configure the Supabase service role key to save papers to your database.</p>}
+        <ol className="space-y-4">{generatedPaper.questions.map((q, i) => <li key={i} className="rounded-lg border border-slate-200 p-4"><div className="flex justify-between gap-3"><p className="font-medium text-slate-900">{i + 1}. {q.questionText}</p><span className="shrink-0 text-sm font-semibold text-slate-600">{q.marks} marks</span></div>{q.options?.length > 0 && <ul className="mt-2 space-y-1 pl-5 text-sm text-slate-700">{q.options.map((o) => <li key={o.id} className="list-[upper-alpha]">{o.text}</li>)}</ul>}<details className="mt-3 text-sm"><summary className="cursor-pointer font-medium text-blue-700">View answer and explanation</summary><p className="mt-2 text-slate-700"><strong>Answer:</strong> {q.correctAnswer}</p><p className="mt-1 text-slate-600">{q.explanation}</p>{q.sourceReference && <p className="mt-1 text-xs text-slate-400">Source: {q.sourceReference}</p>}</details></li>)}</ol>
+      </section>}
     </form>
   );
 }

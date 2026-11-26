@@ -26,14 +26,16 @@ export function SourceMaterialInput({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      onFileSelect(e.target.files[0]);
+      const selected = e.target.files[0];
+      if (selected.type === "application/pdf" && selected.size <= 7.5 * 1024 * 1024) onFileSelect(selected);
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
+      const selected = e.dataTransfer.files[0];
+      if (selected.type === "application/pdf" && selected.size <= 7.5 * 1024 * 1024) onFileSelect(selected);
     }
   };
 
@@ -104,7 +106,7 @@ export function SourceMaterialInput({
                 Click to browse or drag and drop your PDF
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Course syllabi, lecture notes, textbook chapters (PDF up to 20MB)
+                Course syllabi, lecture notes, textbook chapters (PDF up to 7.5 MB)
               </p>
             </div>
           ) : (
