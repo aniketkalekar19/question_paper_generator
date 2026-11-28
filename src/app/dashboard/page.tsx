@@ -13,10 +13,12 @@ import {
   PlusIcon,
   AlertCircleIcon,
 } from "@/components/ui/Icons";
+import { isSupabaseConfigured } from "@/lib/validations/env";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const databaseConfigured = isSupabaseConfigured();
   // Papers state
   let papers: QuestionPaperSummary[] = [];
   let papersError: string | null = null;
@@ -26,32 +28,37 @@ export default async function DashboardPage() {
   let metricsError: string | null = null;
 
   // Execute queries independently so one failure does not break the other
-  const [papersOutcome, metricsOutcome] = await Promise.allSettled([
-    QuestionPaperService.getAllQuestionPapers(),
-    PracticeTestService.getAttemptMetrics(),
-  ]);
+  if (databaseConfigured) {
+    const [papersOutcome, metricsOutcome] = await Promise.allSettled([
+      QuestionPaperService.getAllQuestionPapers(),
+      PracticeTestService.getAttemptMetrics(),
+    ]);
 
-  if (papersOutcome.status === "fulfilled") {
-    papers = papersOutcome.value;
-  } else {
-    papersError =
-      papersOutcome.reason instanceof Error
-        ? papersOutcome.reason.message
-        : "Failed to connect to generated papers database.";
-  }
-
-  if (metricsOutcome.status === "fulfilled") {
-    const res = metricsOutcome.value;
-    if (res.success && res.data) {
-      testMetrics = res.data;
+    if (papersOutcome.status === "fulfilled") {
+      papers = papersOutcome.value;
     } else {
-      metricsError = res.error?.message || "Failed to retrieve test metrics.";
+      papersError =
+        papersOutcome.reason instanceof Error
+          ? papersOutcome.reason.message
+          : "Failed to connect to generated papers database.";
+    }
+
+    if (metricsOutcome.status === "fulfilled") {
+      const res = metricsOutcome.value;
+      if (res.success && res.data) {
+        testMetrics = res.data;
+      } else {
+        metricsError = res.error?.message || "Failed to retrieve test metrics.";
+      }
+    } else {
+      metricsError =
+        metricsOutcome.reason instanceof Error
+          ? metricsOutcome.reason.message
+          : "Failed to connect to test attempts database.";
     }
   } else {
-    metricsError =
-      metricsOutcome.reason instanceof Error
-        ? metricsOutcome.reason.message
-        : "Failed to connect to test attempts database.";
+    papersError = "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your deployment environment, then redeploy.";
+    metricsError = papersError;
   }
 
   const hasAnyError = Boolean(papersError || metricsError);
@@ -97,7 +104,9 @@ export default async function DashboardPage() {
               </p>
             )}
             <p className="pt-1 text-[11px] text-amber-700">
-              Check that Supabase schema migrations have been applied and authentication sessions are active.
+              {databaseConfigured
+                ? "Check that Supabase schema migrations have been applied and authentication sessions are active."
+                : "In your hosting provider’s environment settings, add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY from Supabase Project Settings → API, then redeploy."}
             </p>
           </div>
         </div>
@@ -160,7 +169,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent Papers Section */}
-      <RecentPapersSection papers={papers} />
+      <RecentPapersSection papers={papers} databaseConfigured={databaseConfigured} />
     </div>
   );
 }

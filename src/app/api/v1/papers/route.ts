@@ -4,6 +4,7 @@ import { handlePaperGeneration } from "@/lib/api/handler";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   const denied = authorizeApiKey(request);
   return denied || handlePaperGeneration(request);

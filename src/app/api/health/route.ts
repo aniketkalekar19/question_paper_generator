@@ -11,12 +11,14 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const envValidation = validateServerEnv();
+    const securityErrors = envValidation.errors.filter((err) => err.startsWith("SECURITY ERROR:"));
+    const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
 
-    if (!envValidation.isValid) {
+    if (securityErrors.length > 0 || !hasGeminiKey) {
       // Detailed diagnostics are logged strictly on the server; never exposed publicly
       console.error("[Health Check] Server environment validation failed:", {
-        errorCount: envValidation.errors.length,
-        diagnosticMessages: envValidation.errors,
+        securityErrorCount: securityErrors.length,
+        hasGeminiKey,
       });
 
       return NextResponse.json(

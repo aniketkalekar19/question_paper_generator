@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardIcon, SparklesIcon, FileTextIcon } from "@/components/ui/Icons";
+import { isSupabaseConfigured } from "@/lib/validations/env";
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -83,15 +84,31 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
         {/* Project Context Box */}
         <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-xs font-semibold text-slate-700">
-              Database Connected
-            </span>
-          </div>
-          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-            Supabase PostgreSQL active for academic paper generation.
-          </p>
+          {isSupabaseConfigured() ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="text-xs font-semibold text-slate-700">
+                  Database Connected
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                Supabase PostgreSQL active for academic paper generation.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-amber-500" />
+                <span className="text-xs font-semibold text-slate-700">
+                  Instant Generation Mode
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                Papers generate without database persistence until Supabase is configured.
+              </p>
+            </>
+          )}
         </div>
       </div>
 

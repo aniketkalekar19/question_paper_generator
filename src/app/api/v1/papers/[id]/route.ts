@@ -14,5 +14,28 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   if (!paper) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Paper not found." } }, { status: 404 });
   const { data: questions, error: questionsError } = await client.from("questions").select("*").eq("paper_id", params.id).order("created_at", { ascending: true });
   if (questionsError) return NextResponse.json({ error: { code: "DATABASE_ERROR", message: "Unable to retrieve questions." } }, { status: 500 });
-  return NextResponse.json({ data: { ...paper, questions } });
+  return NextResponse.json({
+    data: {
+      id: paper.id,
+      title: paper.title,
+      subject: paper.subject,
+      difficulty: paper.difficulty,
+      totalMarks: paper.total_marks,
+      durationMinutes: paper.duration_minutes,
+      status: paper.status,
+      createdAt: paper.created_at,
+      persisted: true,
+      questions: (questions || []).map((q) => ({
+        id: q.id,
+        questionText: q.question_text,
+        questionType: q.question_type,
+        difficulty: q.difficulty,
+        marks: q.marks,
+        options: q.options || [],
+        correctAnswer: q.correct_answer,
+        explanation: q.explanation,
+        sourceReference: q.source_reference,
+      })),
+    },
+  });
 }

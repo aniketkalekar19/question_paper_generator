@@ -6,9 +6,10 @@ import { formatDuration, formatMarks } from "@/lib/utils";
 
 interface RecentPapersSectionProps {
   papers: QuestionPaperSummary[];
+  databaseConfigured?: boolean;
 }
 
-export function RecentPapersSection({ papers }: RecentPapersSectionProps) {
+export function RecentPapersSection({ papers, databaseConfigured = true }: RecentPapersSectionProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
@@ -39,12 +40,14 @@ export function RecentPapersSection({ papers }: RecentPapersSectionProps) {
             <FileTextIcon className="h-7 w-7 text-slate-400" />
           </div>
           <h3 className="mt-4 text-base font-semibold text-slate-800">
-            No question papers generated yet
+            {databaseConfigured ? "No question papers generated yet" : "Connect Supabase to load papers"}
           </h3>
           <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-slate-500">
-            Set your subject, input syllabus material, and define marks distribution to generate your first academic paper.
+            {databaseConfigured
+              ? "Set your subject, input syllabus material, and define marks distribution to generate your first academic paper."
+              : "Add your Supabase project URL and publishable key to the deployment environment, then redeploy to enable saved papers and dashboard metrics."}
           </p>
-          <div className="mt-6">
+          {databaseConfigured && <div className="mt-6">
             <Link
               href="/generate"
               className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
@@ -52,7 +55,7 @@ export function RecentPapersSection({ papers }: RecentPapersSectionProps) {
               <PlusIcon className="h-4 w-4 text-blue-400" />
               <span>Generate Your First Paper</span>
             </Link>
-          </div>
+          </div>}
         </div>
       ) : (
         /* Papers List */

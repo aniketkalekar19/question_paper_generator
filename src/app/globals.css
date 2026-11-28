@@ -12,6 +12,21 @@ body {
   min-height: 100%;
 }
 
+.print-student, .print-scheme { display: none; }
+@media print {
+  @page { size: A4; margin: 18mm; }
+  body { background: #fff; }
+  body[data-print-target="student"] .print-student,
+  body[data-print-target="scheme"] .print-scheme { display: block !important; }
+  body[data-print-target="student"] .print-scheme,
+  body[data-print-target="scheme"] .print-student { display: none !important; }
+  body[data-print-target] #generated-paper { border: 0; padding: 0; box-shadow: none; }
+  body[data-print-target] #generated-paper > :not(.print-student):not(.print-scheme) { display: none !important; }
+  .paper-print { max-width: none; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; }
+  .paper-print section { page-break-inside: auto; }
+  .paper-print li { page-break-inside: avoid; }
+}
+
 body {
   background: #f8fafc;
   color: #0f172a;

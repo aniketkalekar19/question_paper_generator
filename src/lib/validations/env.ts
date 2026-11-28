@@ -8,6 +8,10 @@ export interface ServerEnv extends ClientEnv {
   GEMINI_API_KEY?: string;
 }
 
+export function isSupabaseConfigured(): boolean {
+  return validateClientEnv().isValid;
+}
+
 export interface EnvValidationResult<T> {
   isValid: boolean;
   errors: string[];

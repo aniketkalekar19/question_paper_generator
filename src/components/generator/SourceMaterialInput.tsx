@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { UploadCloudIcon, FileTextIcon, TrashIcon } from "@/components/ui/Icons";
 
 export type MaterialSourceType = "upload" | "paste";
@@ -23,19 +23,43 @@ export function SourceMaterialInput({
   onPastedTextChange,
 }: SourceMaterialInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileError, setFileError] = useState("");
+
+  const validateAndSelectFile = async (selected: File) => {
+    setFileError("");
+    if (!selected.name.toLowerCase().endsWith(".pdf")) {
+      setFileError("Please choose a PDF file (.pdf).");
+      return;
+    }
+    if (selected.size > 7.5 * 1024 * 1024) {
+      setFileError("This PDF is larger than 7.5 MB. Choose a smaller file.");
+      return;
+    }
+
+    try {
+      const signature = new Uint8Array(await selected.slice(0, 5).arrayBuffer());
+      if (signature.length !== 5 || signature[0] !== 0x25 || signature[1] !== 0x50 || signature[2] !== 0x44 || signature[3] !== 0x46 || signature[4] !== 0x2d) {
+        setFileError("This file does not appear to be a valid PDF. Please choose another file.");
+        return;
+      }
+      onFileSelect(selected);
+    } catch {
+      setFileError("Unable to read this file. Please try another PDF.");
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      if (selected.type === "application/pdf" && selected.size <= 7.5 * 1024 * 1024) onFileSelect(selected);
+      void validateAndSelectFile(e.target.files[0]);
     }
+    // Allow choosing the same file again after removing or correcting it.
+    e.target.value = "";
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selected = e.dataTransfer.files[0];
-      if (selected.type === "application/pdf" && selected.size <= 7.5 * 1024 * 1024) onFileSelect(selected);
+      void validateAndSelectFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -86,12 +110,22 @@ export function SourceMaterialInput({
       {sourceType === "upload" && (
         <div>
           {!file ? (
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onClick={() => fileInputRef.current?.click()}
-              className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-8 text-center transition hover:border-blue-400 hover:bg-blue-50/30"
-            >
+            <>
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Choose a PDF study material file"
+                className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-8 text-center transition hover:border-blue-400 hover:bg-blue-50/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
               <input
                 ref={fileInputRef}
                 type="file"
@@ -108,7 +142,9 @@ export function SourceMaterialInput({
               <p className="mt-1 text-xs text-slate-500">
                 Course syllabi, lecture notes, textbook chapters (PDF up to 7.5 MB)
               </p>
-            </div>
+              </div>
+              {fileError && <p role="alert" className="mt-2 text-sm text-red-700">{fileError}</p>}
+            </>
           ) : (
             <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/50 p-4">
               <div className="flex items-center gap-3">
@@ -125,7 +161,10 @@ export function SourceMaterialInput({
 
               <button
                 type="button"
-                onClick={() => onFileSelect(null)}
+                onClick={() => {
+                  onFileSelect(null);
+                  setFileError("");
+                }}
                 className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-red-600 transition"
                 title="Remove file"
               >

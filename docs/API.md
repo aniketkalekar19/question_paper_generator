@@ -28,7 +28,9 @@ x-api-key: your-api-key
 }
 ```
 
-Supply either `sourceText` or `pdfBase64` (PDF encoded as standard Base64, maximum 7.5 MB). `difficulty` is `easy`, `medium`, or `hard`. Question types are `mcq`, `short_answer`, and `long_answer`. Question count is 1–40; total marks 1–500 and must be at least the number of questions; duration is 1–360 minutes.
+Supply either `sourceText` or `pdfBase64` (PDF encoded as standard Base64, maximum 7.5 MB; note that serverless hosts such as Vercel may impose a smaller total request-body limit such as 4.5 MB). `difficulty` is `easy`, `medium`, or `hard`. Question types are `mcq`, `short_answer`, and `long_answer`. Question count is 1–40; total marks 1–500 and must be at least the number of questions; duration is 1–360 minutes.
+
+Optional `referencePdfBase64` accepts a PDF up to 7.5 MB and `requirementsPrompt` accepts up to 4,000 characters. The reference guides presentation and style only; generated questions must be new and grounded in study material. When requirements define sections, include section question counts, answer-any choices, and marks per question. The server calculates the maximum marks students must answer and rejects totals or section counts that contradict the prompt. The generated response includes a `blueprint`, `sectionName`, `sectionQuestionNumber`, and `markingCriteria`. The UI offers an on-screen preview switcher and separate print views for a student paper and its scheme of evaluation.
 
 Success response:
 
@@ -41,19 +43,35 @@ Success response:
     "difficulty": "medium",
     "totalMarks": 20,
     "durationMinutes": 45,
+    "blueprint": {
+      "sections": [
+        {
+          "name": "Questions",
+          "questionCount": 5,
+          "answerCount": 5,
+          "marksPerQuestion": 4,
+          "totalMarks": 20
+        }
+      ],
+      "questionCount": 5,
+      "totalMarks": 20
+    },
     "questions": [
       {
         "questionText": "...",
         "questionType": "mcq",
         "difficulty": "medium",
         "marks": 4,
+        "sectionName": "Questions",
+        "sectionQuestionNumber": 1,
         "options": [
           { "id": "A", "text": "...", "isCorrect": false },
           { "id": "B", "text": "...", "isCorrect": true }
         ],
         "correctAnswer": "...",
         "explanation": "...",
-        "sourceReference": "..."
+        "sourceReference": "...",
+        "markingCriteria": ["..."]
       }
     ],
     "createdAt": "2026-11-19T00:00:00.000Z",
